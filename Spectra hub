@@ -476,11 +476,9 @@ PlayerTab:AddToggle({
 --////////////////////////////////////////////////////
 --// TROLL TAB
 local TrollTab = Window:MakeTab({
-    Title = "Troll",
+    Title = "Troll ☠️",
     Icon = "rbxassetid://6862780932"
 })
-
-TrollTab:AddSection({ "BUGs 💀" })
 
 --////////////////////////////////////////////////////
 --// REMOTES
@@ -563,6 +561,7 @@ TrollTab:AddButton({
     end
 })
 
+TrollTab:AddSection({ "troll" })
 
 --////////////////////////////////////////////////////
 --// PLAYER LIST
