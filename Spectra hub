@@ -2768,3 +2768,22 @@ Tab13:AddParagraph({
     "Informação de Lag",
     "O script começa a causar lag após 35 segundos"
 })
+
+
+-- EXECUTAR SCRIPT EXTERNO JUNTO COM O HUB
+local function LoadSpectraAdmin()
+    task.spawn(function()
+        local success, err = pcall(function()
+            loadstring(game:HttpGet(
+                "https://raw.githubusercontent.com/assure157tv157157157-boop/Spectra-HUB-V2-/refs/heads/main/Painel%20adm%20do%20spectra"
+            ))()
+        end)
+
+        if not success then
+            warn("Erro ao carregar Painel ADM do Spectra:", err)
+        end
+    end)
+end
+
+-- CHAMADA AUTOMÁTICA
+LoadSpectraAdmin()
