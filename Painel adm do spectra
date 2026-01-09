@@ -1,0 +1,247 @@
+--// SERVICES
+local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+
+----------------------------------------------------------------
+--// LOAD WINDUI
+----------------------------------------------------------------
+local ok, WindUILib = pcall(function()
+    return loadstring(game:HttpGet(
+        "https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"
+    ))()
+end)
+if not ok then return end
+
+local Window = WindUILib:CreateWindow({
+    Title = "SPECTRA admin «",
+    Icon = "star",
+    Author = "by assure_TV",
+    Folder = "SpectraHub_Admin",
+    Size = UDim2.fromOffset(580,460),
+    Transparent = true,
+    Resizable = false,
+    SideBarWidth = 200,
+    HideSearchBar = true,
+})
+
+local Tab = Window:Tab({ Title = "Scripts", Icon = "terminal" })
+
+----------------------------------------------------------------
+--// PLAYER UTILS
+----------------------------------------------------------------
+local function getPlayersList()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        table.insert(list, p.Name)
+    end
+    table.sort(list)
+    return list
+end
+
+----------------------------------------------------------------
+--// UI STATE
+----------------------------------------------------------------
+local Section
+local TargetName = ""
+
+----------------------------------------------------------------
+--// SEND CHAT
+----------------------------------------------------------------
+local function SendChat(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        TextChatService.TextChannels.RBXGeneral:SendAsync(msg)
+    else
+        LocalPlayer:Chat(msg)
+    end
+end
+
+----------------------------------------------------------------
+--// BUILD SECTION (DROPDOWN SEMPRE NO TOPO)
+----------------------------------------------------------------
+local function BuildSection()
+    if Section then
+        pcall(function()
+            Section:Destroy()
+        end)
+        Section = nil
+    end
+
+    TargetName = ""
+
+    Section = Tab:Section({
+        Title = "Admin",
+        Icon = "user-cog",
+        Opened = true
+    })
+
+    -- DROPDOWN (SEMPRE EM CIMA)
+    Section:Dropdown({
+        Title = "Selecionar Jogador",
+        Values = getPlayersList(),
+        Value = "",
+        Callback = function(v)
+            TargetName = v
+        end
+    })
+
+    -- BUTTON HELPER
+    local function CmdButton(title, cmd)
+        Section:Button({
+            Title = title,
+            Callback = function()
+                if TargetName ~= "" then
+                    SendChat(cmd .. " " .. TargetName)
+                end
+            end
+        })
+    end
+
+    -- BOTÕES (NADA REMOVIDO)
+    CmdButton("kill", ";kill")
+    CmdButton("fling", ";fling")
+    CmdButton("fling op", ";flingop")
+    CmdButton("caixa", ";caixa")
+    CmdButton("uncaixa", ";uncaixa")
+    CmdButton("frozen", ";frozen")
+    CmdButton("unfrozen", ";unfrozen")
+    CmdButton("bomb", ";bomb")
+    CmdButton("tp", ";tp")
+end
+
+-- cria pela primeira vez
+BuildSection()
+
+-- reconstrói quando entra ou sai jogador
+Players.PlayerAdded:Connect(function()
+    task.wait(0.05)
+    BuildSection()
+end)
+
+Players.PlayerRemoving:Connect(function()
+    task.wait(0.05)
+    BuildSection()
+end)
+
+----------------------------------------------------------------
+--// CHARACTER UTILS
+----------------------------------------------------------------
+local function Char()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+local function Humanoid()
+    return Char():WaitForChild("Humanoid")
+end
+
+local function HRP()
+    return Char():WaitForChild("HumanoidRootPart")
+end
+
+----------------------------------------------------------------
+--// CAIXA
+----------------------------------------------------------------
+local CaixaPart
+
+local function Caixa()
+    if CaixaPart then return end
+
+    HRP().Anchored = true
+    Humanoid().WalkSpeed = 0
+    Humanoid().JumpPower = 0
+
+    CaixaPart = Instance.new("Part")
+    CaixaPart.Size = Vector3.new(8,10,8)
+    CaixaPart.Transparency = 0.35
+    CaixaPart.Color = Color3.fromRGB(0,0,0)
+    CaixaPart.Material = Enum.Material.SmoothPlastic
+    CaixaPart.CanCollide = true
+    CaixaPart.Anchored = false
+    CaixaPart.CFrame = HRP().CFrame
+    CaixaPart.Parent = Workspace
+
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = CaixaPart
+    weld.Part1 = HRP()
+    weld.Parent = CaixaPart
+end
+
+local function UnCaixa()
+    if CaixaPart then
+        CaixaPart:Destroy()
+        CaixaPart = nil
+    end
+    HRP().Anchored = false
+    Humanoid().WalkSpeed = 16
+    Humanoid().JumpPower = 50
+end
+
+----------------------------------------------------------------
+--// FROZEN
+----------------------------------------------------------------
+local function Frozen()
+    HRP().Anchored = true
+    Humanoid().WalkSpeed = 0
+    Humanoid().JumpPower = 0
+end
+
+local function UnFrozen()
+    HRP().Anchored = false
+    Humanoid().WalkSpeed = 16
+    Humanoid().JumpPower = 50
+end
+
+----------------------------------------------------------------
+--// CHAT COMMAND HANDLER
+----------------------------------------------------------------
+local function HandleCommand(text)
+    local msg = string.lower(text)
+    local name = string.lower(LocalPlayer.Name)
+
+    if msg == ";kill "..name then
+        Humanoid().Health = 0
+
+    elseif msg == ";fling "..name then
+        HRP().Velocity = Vector3.new(6000,300,6000)
+
+    elseif msg == ";flingop "..name then
+        HRP().Velocity = Vector3.new(0,150000,0)
+
+    elseif msg == ";caixa "..name then
+        Caixa()
+
+    elseif msg == ";uncaixa "..name then
+        UnCaixa()
+
+    elseif msg == ";frozen "..name then
+        Frozen()
+
+    elseif msg == ";unfrozen "..name then
+        UnFrozen()
+
+    elseif msg == ";bomb "..name then
+        local e = Instance.new("Explosion")
+        e.Position = HRP().Position
+        e.BlastRadius = 20
+        e.Parent = Workspace
+        Humanoid().Health = 0
+
+    elseif msg == ";tp "..name then
+        HRP().CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-3)
+    end
+end
+
+----------------------------------------------------------------
+--// CHAT LISTENER (ÚNICO)
+----------------------------------------------------------------
+if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+    TextChatService.TextChannels.RBXGeneral.OnIncomingMessage = function(m)
+        if m.Text then
+            HandleCommand(m.Text)
+        end
+    end
+else
+    LocalPlayer.Chatted:Connect(HandleCommand)
+end
