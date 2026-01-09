@@ -863,31 +863,44 @@ TrollTab:AddToggle({
 })
 
 
+
 --==============================
--- SPECTATE ON / OFF (MELHORADO)
+-- SPECTATE (BOTÃO ARRUMADO)
 --==============================
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
 
 local spectating = false
 local spectateConn
+local charConn
 local currentTarget
-local removeConn
-local charAddedConn
 
--- Função para aplicar spectate
-local function applySpectate(player)
-    if not spectating then return end
-    if not player then return end
+--==============================
+-- FUNÇÕES
+--==============================
+local function resetCamera()
+    if spectateConn then spectateConn:Disconnect() spectateConn = nil end
+    if charConn then charConn:Disconnect() charConn = nil end
 
+    currentTarget = nil
+
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        Camera.CameraSubject = hum
+        Camera.CameraType = Enum.CameraType.Custom
+    end
+end
+
+local function spectatePlayer(player)
+    if not spectating or not player then return end
+
+    resetCamera()
+    spectating = true
     currentTarget = player
 
-    -- Desconecta conexões antigas
-    if spectateConn then spectateConn:Disconnect() end
-    if charAddedConn then charAddedConn:Disconnect() end
-
-    -- Mantém a câmera no jogador (mesmo morto)
     spectateConn = RunService.RenderStepped:Connect(function()
         if not spectating then return end
         if not currentTarget or not currentTarget.Character then return end
@@ -899,47 +912,26 @@ local function applySpectate(player)
         end
     end)
 
-    -- Se o jogador resetar, continua spectando
-    charAddedConn = player.CharacterAdded:Connect(function()
-        task.wait(0.2)
-        if spectating then
-            applySpectate(player)
+    charConn = player.CharacterAdded:Connect(function()
+        task.wait(0.1)
+        if spectating and currentTarget == player then
+            spectatePlayer(player)
         end
     end)
 end
 
--- Para spectate e volta para você
-local function stopSpectate()
-    spectating = false
-    currentTarget = nil
-
-    if spectateConn then
-        spectateConn:Disconnect()
-        spectateConn = nil
-    end
-
-    if charAddedConn then
-        charAddedConn:Disconnect()
-        charAddedConn = nil
-    end
-
-    local myChar = Players.LocalPlayer.Character
-    local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
-    if myHum then
-        Camera.CameraSubject = myHum
-        Camera.CameraType = Enum.CameraType.Custom
-    end
-end
-
--- Se o jogador sair do servidor → volta pra você
-removeConn = Players.PlayerRemoving:Connect(function(plr)
+--==============================
+-- PLAYER SAINDO
+--==============================
+Players.PlayerRemoving:Connect(function(plr)
     if spectating and currentTarget == plr then
-        stopSpectate()
+        resetCamera()
+        spectating = false
     end
 end)
 
 --==============================
--- TOGGLE
+-- BOTÃO
 --==============================
 TrollTab:AddToggle({
     Name = "👁️ Spectar Jogador",
@@ -947,35 +939,47 @@ TrollTab:AddToggle({
     Callback = function(state)
         spectating = state
 
-        if state then
-            local target = Players:FindFirstChild(selectedPlayer)
-            if target then
-                applySpectate(target)
-            end
+        if not state then
+            resetCamera()
+            return
+        end
+
+        local target = Players:FindFirstChild(selectedPlayer)
+        if target then
+            spectatePlayer(target)
         else
-            stopSpectate()
+            resetCamera()
         end
     end
 })
 
 --==============================
--- ATUALIZA QUANDO TROCAR PLAYER
+-- TROCA DE PLAYER (SEM QUEBRAR LISTA)
 --==============================
--- Chame isso SEMPRE que selectedPlayer mudar
 task.spawn(function()
     local lastSelected
 
     while true do
-        task.wait(0.2)
-        if spectating and selectedPlayer ~= lastSelected then
+        task.wait(0.15)
+
+        if not spectating then
+            lastSelected = nil
+            continue
+        end
+
+        if selectedPlayer ~= lastSelected then
             lastSelected = selectedPlayer
             local newTarget = Players:FindFirstChild(selectedPlayer)
+
             if newTarget then
-                applySpectate(newTarget)
+                spectatePlayer(newTarget)
+            else
+                resetCamera()
             end
         end
     end
 end)
+
 
 
 --==============================
