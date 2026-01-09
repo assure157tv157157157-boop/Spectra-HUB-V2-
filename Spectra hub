@@ -516,6 +516,102 @@ TrollTab:AddButton({
     end
 })
 
+
+
+--////////////////////////////////////////////////////
+--// VARIÁVEIS
+local toggleEnabled = false
+local spinning = false
+local targetAlive = false
+local teleportAfter = 2
+
+local FINAL_POSITION = Vector3.new(-63, -480, -100) -- 🔽 ALTERADO AQUI (-470 → -480)
+
+--////////////////////////////////////////////////////
+--// FUNÇÃO PEGAR / EQUIPAR COUCH
+local function equipCouch()
+    local backpack = plr:WaitForChild("Backpack")
+    local character = plr.Character or plr.CharacterAdded:Wait()
+
+    if not backpack:FindFirstChild("Couch") and not character:FindFirstChild("Couch") then
+        ToolRemote:InvokeServer("PickingTools", "Couch")
+        task.wait(0.5)
+    end
+
+    local couch = backpack:FindFirstChild("Couch")
+    if couch then
+        couch.Parent = character
+    end
+end
+
+--////////////////////////////////////////////////////
+--// REEQUIPAR AO MORRER
+plr.CharacterAdded:Connect(function(char)
+    character = char
+    if toggleEnabled then
+        task.wait(1)
+        equipCouch()
+    end
+end)
+
+--////////////////////////////////////////////////////
+--// LOOP PRINCIPAL
+RunService.Heartbeat:Connect(function()
+    if not toggleEnabled then return end
+    if not selectedPlayer then return end
+
+    local target = Players:FindFirstChild(selectedPlayer)
+    if not target or not target.Character then return end
+    if not target.Character:FindFirstChild("HumanoidRootPart") then return end
+
+    local hum = target.Character:FindFirstChild("Humanoid")
+    if not hum then return end
+
+    if hum.Health > 0 and not spinning then
+        spinning = true
+        targetAlive = true
+
+        task.spawn(function()
+            equipCouch()
+
+            local start = tick()
+            while toggleEnabled and tick() - start < teleportAfter do
+                if not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then break end
+                if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then break end
+
+                plr.Character.HumanoidRootPart.CFrame =
+                    target.Character.HumanoidRootPart.CFrame *
+                    CFrame.Angles(math.rad(Workspace.DistributedGameTime * 30000), 0, 0)
+
+                RunService.Heartbeat:Wait()
+            end
+
+            if toggleEnabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                plr.Character.HumanoidRootPart.CFrame = CFrame.new(FINAL_POSITION)
+            end
+
+            spinning = false
+        end)
+    end
+
+    if hum.Health <= 0 then
+        targetAlive = false
+    end
+end)
+
+--////////////////////////////////////////////////////
+--// TOGGLE
+TrollTab:AddToggle({
+    Name = "kill",
+    Default = false,
+    Callback = function(state)
+        toggleEnabled = state
+        spinning = false
+    end
+})
+
+
+
 --////////////////////////////////////////////////////
 --// CONTROLE DE ITENS (SEM SPAM)
 local requiredTools = { "ShoppingCart", "Couch" }
@@ -643,7 +739,7 @@ end
 --////////////////////////////////////////////////////
 --// TOGGLE
 TrollTab:AddToggle({
-    Name = "kill ☠️ ",
+    Name = "bring ☠️ ",
     Default = false,
     Callback = function(v)
         enabled = v
@@ -673,7 +769,7 @@ end)
 -- TOGGLE KILL DEMORADO E CHATO
 --==============================
 TrollTab:AddToggle({
-    Name = "Kill demorado e chato 😈",
+    Name = "bring demorado chato 😈",
     Default = false,
     Callback = function(state)
         killEnabled = state
@@ -768,34 +864,66 @@ TrollTab:AddToggle({
 
 
 --==============================
--- SPECTATE ON / OFF
+-- SPECTATE ON / OFF (MELHORADO)
 --==============================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
+
 local spectating = false
 local spectateConn
+local currentTarget
+local removeConn
+local charAddedConn
 
-local function startSpectate(player)
+-- Função para aplicar spectate
+local function applySpectate(player)
+    if not spectating then return end
+    if not player then return end
+
+    currentTarget = player
+
+    -- Desconecta conexões antigas
     if spectateConn then spectateConn:Disconnect() end
+    if charAddedConn then charAddedConn:Disconnect() end
 
-    spectateConn = game:GetService("RunService").RenderStepped:Connect(function()
+    -- Mantém a câmera no jogador (mesmo morto)
+    spectateConn = RunService.RenderStepped:Connect(function()
         if not spectating then return end
-        if not player or not player.Character then return end
+        if not currentTarget or not currentTarget.Character then return end
 
-        local hum = player.Character:FindFirstChildOfClass("Humanoid")
+        local hum = currentTarget.Character:FindFirstChildOfClass("Humanoid")
         if hum then
             Camera.CameraSubject = hum
             Camera.CameraType = Enum.CameraType.Custom
         end
     end)
+
+    -- Se o jogador resetar, continua spectando
+    charAddedConn = player.CharacterAdded:Connect(function()
+        task.wait(0.2)
+        if spectating then
+            applySpectate(player)
+        end
+    end)
 end
 
+-- Para spectate e volta para você
 local function stopSpectate()
+    spectating = false
+    currentTarget = nil
+
     if spectateConn then
         spectateConn:Disconnect()
         spectateConn = nil
     end
 
-    local myChar = game.Players.LocalPlayer.Character
+    if charAddedConn then
+        charAddedConn:Disconnect()
+        charAddedConn = nil
+    end
+
+    local myChar = Players.LocalPlayer.Character
     local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
     if myHum then
         Camera.CameraSubject = myHum
@@ -803,7 +931,16 @@ local function stopSpectate()
     end
 end
 
--- Toggle (usa selectedPlayer)
+-- Se o jogador sair do servidor → volta pra você
+removeConn = Players.PlayerRemoving:Connect(function(plr)
+    if spectating and currentTarget == plr then
+        stopSpectate()
+    end
+end)
+
+--==============================
+-- TOGGLE
+--==============================
 TrollTab:AddToggle({
     Name = "👁️ Spectar Jogador",
     Default = false,
@@ -811,15 +948,34 @@ TrollTab:AddToggle({
         spectating = state
 
         if state then
-            local target = game.Players:FindFirstChild(selectedPlayer)
+            local target = Players:FindFirstChild(selectedPlayer)
             if target then
-                startSpectate(target)
+                applySpectate(target)
             end
         else
             stopSpectate()
         end
     end
 })
+
+--==============================
+-- ATUALIZA QUANDO TROCAR PLAYER
+--==============================
+-- Chame isso SEMPRE que selectedPlayer mudar
+task.spawn(function()
+    local lastSelected
+
+    while true do
+        task.wait(0.2)
+        if spectating and selectedPlayer ~= lastSelected then
+            lastSelected = selectedPlayer
+            local newTarget = Players:FindFirstChild(selectedPlayer)
+            if newTarget then
+                applySpectate(newTarget)
+            end
+        end
+    end
+end)
 
 
 --==============================
@@ -1498,10 +1654,10 @@ local function GiveTool(toolName)
 end
 
 --////////////////////////////////////////////////////
---// CRIAR BOTÕES 🎁
+--// CRIAR BOTÕES 💎
 for buttonName, realToolName in pairs(tools) do
     ItemTab:AddButton({
-        Name = "🎁  "..buttonName,
+        Name = "💎  "..buttonName,
         Callback = function()
             GiveTool(realToolName)
         end
@@ -1509,9 +1665,9 @@ for buttonName, realToolName in pairs(tools) do
 end
 
 --////////////////////////////////////////////////////
---// BOTÃO PEGAR TODOS 🎁
+--// BOTÃO PEGAR TODOS 💎
 ItemTab:AddButton({
-    Name = "🎁 PEGAR TODOS OS ITENS 😈",
+    Name = "💎 PEGAR TODOS OS ITENS 😈",
     Callback = function()
         task.spawn(function()
             for _, realToolName in pairs(tools) do
@@ -1527,7 +1683,7 @@ ItemTab:AddButton({
 --// MENSAGEM FINAL EXPLICATIVA
 ItemTab:AddParagraph({
     "ℹ️ Informação",
-    "Ao clicar em um botão 🎁, o item correspondente será adicionado diretamente ao seu personagem.\n\n" ..
+    "Ao clicar em um botão 💎, o item correspondente será adicionado diretamente ao seu personagem.\n\n" ..
     "O botão 'PEGAR TODOS OS ITENS' entrega todos os itens disponíveis de uma vez.\n\n" ..
     "Use com responsabilidade."
 })
