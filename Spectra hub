@@ -485,7 +485,6 @@ local TrollTab = Window:MakeTab({
 local ToolRemote = ReplicatedStorage.RE:WaitForChild("1Too1l")
 local CarRemote  = ReplicatedStorage.RE:WaitForChild("1Ca1r")
 
-TrollTab:AddSection({ "troll" })
 
 --////////////////////////////////////////////////////
 --// PLAYER LIST
@@ -633,6 +632,30 @@ task.spawn(function()
         end
     end
 end)
+
+--==============================
+-- TELEPORTAR PARA JOGADOR
+--==============================
+TrollTab:AddButton({
+    Name = "📍 Teleportar no Jogador",
+    Callback = function()
+        if not selectedPlayer then return end
+
+        local Players = game:GetService("Players")
+        local plr = Players.LocalPlayer
+        local target = Players:FindFirstChild(selectedPlayer)
+
+        if not target or not target.Character then return end
+
+        local myChar = plr.Character
+        local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+        local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+
+        if myHRP and targetHRP then
+            myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3)
+        end
+    end
+})
 
 
 
@@ -981,33 +1004,6 @@ TrollTab:AddToggle({
         end)
     end
 })
-
-
---==============================
--- TELEPORTAR PARA JOGADOR
---==============================
-TrollTab:AddButton({
-    Name = "📍 Teleportar no Jogador",
-    Callback = function()
-        if not selectedPlayer then return end
-
-        local Players = game:GetService("Players")
-        local plr = Players.LocalPlayer
-        local target = Players:FindFirstChild(selectedPlayer)
-
-        if not target or not target.Character then return end
-
-        local myChar = plr.Character
-        local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
-        local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
-
-        if myHRP and targetHRP then
-            myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3)
-        end
-    end
-})
-
-
 
 
 
