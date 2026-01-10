@@ -329,10 +329,6 @@ end
 
 
 
-local Section = Tab:Section({
-    Title = "verifique global",
-    Opened = true
-})
 
 local function SendChat(msg)
     if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
