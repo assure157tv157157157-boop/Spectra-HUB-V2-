@@ -1297,7 +1297,7 @@ local SkinsTab = Window:MakeTab({
     Icon = "rbxassetid://15726694719"
 })
 
-SkinsTab:AddSection({ "Copy Outfit / Avatar" })
+SkinsTab:AddSection({ "Copy avatar" })
 
 -- ===============================
 -- DROPDOWN (MESMO SISTEMA DO TROLL)
@@ -1450,6 +1450,7 @@ SkinsTab:AddButton({
 })
 
 
+SkinsTab:AddSection({ "iten / skin" })
 
 --===============================
 -- DROPDOWN SKINS (UPTOWN / ITENS)
@@ -1510,7 +1511,7 @@ end
 
 -- Dropdown
 SkinsTab:AddDropdown({
-    Name = "Selecionar Skin / Item",
+    Name = "Selecionar iten / skin",
     Options = skinNames,
     Callback = function(choice)
         selectedSkinId = SkinsList[choice]
@@ -1531,136 +1532,7 @@ SkinsTab:AddButton({
 
 
 
---// ===============================
---// OPÇÕES DE SKIN (NOMES INVERTIDOS)
---// ===============================
-
-local SkinOptions = {
-    "Pequeno",
-    "Musculoso",
-    "1x1x1",
-    "Fofo",
-    "Auto",          -- antes era Musculoso 2
-    "Musculoso 2"    -- antes era Auto
-}
-
-local SelectedSkin = SkinOptions[1]
-
---// ===============================
---// DROPDOWN
---// ===============================
-
-SkinsTab:AddDropdown({
-    Name = "Escolher Skin",
-    Options = SkinOptions,
-    Default = SelectedSkin,
-    Callback = function(v)
-        SelectedSkin = v
-    end
-})
-
---// ===============================
---// BOTÃO APLICAR
---// ===============================
-
-SkinsTab:AddButton({
-    Name = "Aplicar Skin",
-    Callback = function()
-
-        -- PEQUENO
-        if SelectedSkin == "Pequeno" then
-            local args = {
-                [1] = {
-                    [1] = 120973199097564,
-                    [2] = 112849465115864,
-                    [3] = 118345433416023,
-                    [4] = 0,
-                    [5] = 0,
-                    [6] = 134082579
-                }
-            }
-            Remotes.ChangeCharacterBody:InvokeServer(unpack(args))
-        end
-
-        -- MUSCULOSO
-        if SelectedSkin == "Musculoso" then
-            local args = {
-                [1] = {
-                    [1] = 18178775358,
-                    [2] = 18178775182,
-                    [3] = 18178775725,
-                    [4] = 96815508293389,
-                    [5] = 121515016872144,
-                    [6] = 0
-                }
-            }
-            Remotes.ChangeCharacterBody:InvokeServer(unpack(args))
-        end
-
-        -- 1x1x1
-        if SelectedSkin == "1x1x1" then
-            local args = {
-                [1] = {
-                    [1] = 87108996849145,
-                    [2] = 89124612345294,
-                    [3] = 84431523780379,
-                    [4] = 104281326156987,
-                    [5] = 94645302037763,
-                    [6] = 0
-                }
-            }
-            Remotes.ChangeCharacterBody:InvokeServer(unpack(args))
-        end
-
-        -- FOFO
-        if SelectedSkin == "Fofo" then
-            local args = {
-                [1] = {
-                    [1] = 376532000,
-                    [2] = 376531012,
-                    [3] = 376530220,
-                    [4] = 0,
-                    [5] = 0,
-                    [6] = 71993263971199
-                }
-            }
-            Remotes.ChangeCharacterBody:InvokeServer(unpack(args))
-        end
-
-        -- AUTO (usa os IDs do antigo MUSCULOSO 2)
-        if SelectedSkin == "Auto" then
-            local args = {
-                [1] = {
-                    [1] = 84053421838284,
-                    [2] = 116266039925754,
-                    [3] = 115931454049085,
-                    [4] = 96815508293389,
-                    [5] = 121515016872144,
-                    [6] = 76568859580605
-                }
-            }
-            Remotes.ChangeCharacterBody:InvokeServer(unpack(args))
-        end
-
-        -- MUSCULOSO 2 (usa os IDs do antigo AUTO)
-        if SelectedSkin == "Musculoso 2" then
-            local args = {
-                [1] = {
-                    [1] = 32336059,
-                    [2] = 4416788553,
-                    [3] = 4416785861,
-                    [4] = 2517207746,
-                    [5] = 2517204456,
-                    [6] = 0
-                }
-            }
-            Remotes.ChangeCharacterBody:InvokeServer(unpack(args))
-        end
-    end
-})
-
-
-SkinsTab:AddSection({ "Trocar Pernas" })
+SkinsTab:AddSection({ "pernas" })
 
 --==============================
 -- SKINS | TROCAR PERNAS
@@ -1712,6 +1584,8 @@ SkinsTab:AddButton({
         applyLegs(false, true)
     end
 })
+
+SkinsTab:AddSection({ "vai ter mais coisas em breve" })
 
 
 --////////////////////////////////////////////////////
