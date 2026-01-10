@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -18,7 +19,7 @@ end)
 if not ok then return end
 
 local Window = WindUILib:CreateWindow({
-    Title = "SPECTRA_admin «",
+    Title = "« SPECTRA admin »",
     Icon = "star",
     Author = "by assure_TV",
     Folder = "SpectraHub_Admin",
@@ -29,7 +30,7 @@ local Window = WindUILib:CreateWindow({
     HideSearchBar = true,
 })
 
-local Tab = Window:Tab({ Title = "comandos", Icon = "terminal" })
+local Tab = Window:Tab({ Title = "← comandos →", Icon = "terminal" })
 
 --------------------------------------------------
 --// PLAYER UTILS
@@ -96,7 +97,6 @@ local function BuildSection()
         })
     end
 
-    -- COMANDOS
     CmdButton("kill", ";kill")
     CmdButton("fling", ";fling")
     CmdButton("fling op", ";flingop")
@@ -106,9 +106,8 @@ local function BuildSection()
     CmdButton("unfrozen", ";unfrozen")
     CmdButton("bomb", ";bomb")
 
-    -- BOTÃO NOVO
     Section:Button({
-        Title = "verifique ALL",
+        Title = "verifique",
         Callback = function()
             SendChat(";verifique")
         end
@@ -128,7 +127,90 @@ Players.PlayerRemoving:Connect(function()
 end)
 
 --------------------------------------------------
---// CHARACTER UTILS
+--// TAG SYSTEM (ANTI-INVISÍVEL / PERMANENTE)
+--------------------------------------------------
+local TaggedPlayers = {}
+
+local function criarTag(head)
+    if head:FindFirstChild("UserTag") then
+        return head.UserTag
+    end
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "UserTag"
+    billboard.Size = UDim2.new(0, 110, 0, 30)
+    billboard.Adornee = head
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 2.6, 0)
+    billboard.LightInfluence = 0
+    billboard.MaxDistance = math.huge
+    billboard.ResetOnSpawn = false
+    billboard.Parent = head
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(100,100,100)
+    frame.BorderSizePixel = 0
+    frame.Parent = billboard
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = frame
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 2.5
+    stroke.Color = Color3.fromRGB(55,55,55)
+    stroke.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "user Spectra"
+    label.TextColor3 = Color3.fromRGB(255,255,255)
+    label.TextStrokeTransparency = 0
+    label.TextSize = 12
+    label.Font = Enum.Font.GothamBold
+    label.Parent = frame
+
+    return billboard
+end
+
+local function garantirTagNoCharacter(character)
+    local head = character:WaitForChild("Head", 10)
+    if not head then return end
+
+    criarTag(head)
+
+    -- MONITORA SE A TAG SUMIR OU FICAR INVISÍVEL
+    task.spawn(function()
+        while character.Parent do
+            task.wait(1)
+            if not head.Parent then break end
+
+            local tag = head:FindFirstChild("UserTag")
+            if not tag or tag.Enabled == false then
+                criarTag(head)
+            end
+        end
+    end)
+end
+
+local function garantirTag(player)
+    if TaggedPlayers[player.UserId] then return end
+    TaggedPlayers[player.UserId] = true
+
+    if player.Character then
+        garantirTagNoCharacter(player.Character)
+    end
+
+    player.CharacterAdded:Connect(function(character)
+        task.wait(0.2)
+        garantirTagNoCharacter(character)
+    end)
+end
+
+--------------------------------------------------
+--// ACTIONS
 --------------------------------------------------
 local function Char()
     return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -142,70 +224,6 @@ local function HRP()
     return Char():WaitForChild("HumanoidRootPart")
 end
 
---------------------------------------------------
---// TAG SYSTEM (PERMANENTE)
---------------------------------------------------
-local TaggedPlayers = {}
-
-local function aplicarTag(character)
-    local head = character:WaitForChild("Head", 5)
-    if not head then return end
-
-    if head:FindFirstChild("UserTag") then
-        head.UserTag:Destroy()
-    end
-
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "UserTag"
-    billboard.Parent = head
-    billboard.Size = UDim2.new(0, 100, 0, 28)
-    billboard.Adornee = head
-    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-    billboard.AlwaysOnTop = true
-    billboard.ResetOnSpawn = false
-
-    local frame = Instance.new("Frame")
-    frame.Parent = billboard
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    frame.BorderSizePixel = 0
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = frame
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Thickness = 2.5
-    stroke.Color = Color3.fromRGB(55, 55, 55)
-    stroke.Parent = frame
-
-    local label = Instance.new("TextLabel")
-    label.Parent = frame
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = "user Spectra"
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.TextSize = 12
-    label.Font = Enum.Font.GothamBold
-end
-
-local function garantirTag(player)
-    if TaggedPlayers[player.UserId] then return end
-    TaggedPlayers[player.UserId] = true
-
-    if player.Character then
-        aplicarTag(player.Character)
-    end
-
-    player.CharacterAdded:Connect(function(char)
-        task.wait(0.1)
-        aplicarTag(char)
-    end)
-end
-
---------------------------------------------------
---// ACTIONS
---------------------------------------------------
 local CaixaPart
 
 local function ActionKill()
