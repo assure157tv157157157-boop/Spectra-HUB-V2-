@@ -1585,7 +1585,143 @@ SkinsTab:AddButton({
     end
 })
 
-SkinsTab:AddSection({ "vai ter mais coisas em breve" })
+
+SkinsTab:AddSection({ "Corpos" })
+
+local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local ChangeBody = Remotes:WaitForChild("ChangeCharacterBody")
+
+-- FUNÇÃO PADRÃO PARA APLICAR CORPO
+local function ApplyBody(ids)
+    ChangeBody:InvokeServer({
+        ids[1],
+        ids[2],
+        ids[3],
+        ids[4],
+        ids[5],
+        ids[6]
+    })
+end
+
+-- PEQUENO
+SkinsTab:AddButton({
+    Name = "Pequeno",
+    Callback = function()
+        ApplyBody({376532000,376531012,376530220,0,0,71993263971199})
+    end
+})
+
+-- MUSCULOSO
+SkinsTab:AddButton({
+    Name = "Musculoso",
+    Callback = function()
+        ApplyBody({32336059,4416788553,4416785861,2517207746,2517204456,0})
+    end
+})
+
+-- AUTO
+SkinsTab:AddButton({
+    Name = "Auto",
+    Callback = function()
+        ApplyBody({84053421838284,116266039925754,115931454049085,96815508293389,121515016872144,76568859580605})
+    end
+})
+
+-- MINI
+SkinsTab:AddButton({
+    Name = "Mini",
+    Callback = function()
+        ApplyBody({120973199097564,112849465115864,118345433416023,0,0,134082579})
+    end
+})
+
+-- 1x1x1x
+SkinsTab:AddButton({
+    Name = "1x1x1x",
+    Callback = function()
+        ApplyBody({87108996849145,89124612345294,84431523780379,104281326156987,94645302037763,0})
+    end
+})
+
+-- AUTO 2
+SkinsTab:AddButton({
+    Name = "Auto 2",
+    Callback = function()
+        ApplyBody({15365110905,17754346380,17754346403,139607718,81153927159685,102360893332889})
+    end
+})
+
+-- MUSCULOSO 2
+SkinsTab:AddButton({
+    Name = "Musculoso 2",
+    Callback = function()
+        ApplyBody({18178775358,18178775182,18178775725,96815508293389,121515016872144,0})
+    end
+})
+
+-- MUSCULOSO 3
+SkinsTab:AddButton({
+    Name = "Musculoso 3",
+    Callback = function()
+        ApplyBody({32336117,16580491126,32336182,14752574049,14752574419,16580493236})
+    end
+})
+
+-- MINI REPO
+SkinsTab:AddButton({
+    Name = "Mini REPO",
+    Callback = function()
+        ApplyBody({117101023704825,125767940563838,137301494386930,87357384184710,133391239416999,111818794467824})
+    end
+})
+
+-- MINI GARANHÃO
+SkinsTab:AddButton({
+    Name = "Mini Garanhão",
+    Callback = function()
+        ApplyBody({124355047456535,120507500641962,82273782655463,113625313757230,109182039511426,0})
+    end
+})
+
+-- STICK
+SkinsTab:AddButton({
+    Name = "Stick",
+    Callback = function()
+        ApplyBody({14731384498,14731377938,14731377894,14731377875,14731377941,14731382899})
+    end
+})
+
+-- CHUNKY BUG
+SkinsTab:AddButton({
+    Name = "Chunky-Bug",
+    Callback = function()
+        ApplyBody({15527827600,15527827578,15527831669,15527836067,15527827184,15527827599})
+    end
+})
+
+-- CURSED SPIDER
+SkinsTab:AddButton({
+    Name = "Cursed-Spider",
+    Callback = function()
+        ApplyBody({134555168634906,100269043793774,125607053187319,122504853343598,95907982259204,91289185840375})
+    end
+})
+
+-- PESSED TERROR
+SkinsTab:AddButton({
+    Name = "Pessed Terror",
+    Callback = function()
+        ApplyBody({
+            122800511983371,
+            132465361516275,
+            125155800236527,
+            83070163355072,
+            102906187256945,
+            78311422507297
+        })
+    end
+})
+
 
 
 --////////////////////////////////////////////////////
