@@ -1005,6 +1005,129 @@ TrollTab:AddToggle({
     end
 })
 
+--////////////////////////////////////////////////////
+-- LIMPAR TUDO
+local function stopAll()
+    running = false
+
+    if teleportConn then
+        teleportConn:Disconnect()
+        teleportConn = nil
+    end
+
+    boat = nil
+
+    pcall(function()
+        CarRemote:FireServer("DeleteAllVehicles")
+    end)
+end
+
+--////////////////////////////////////////////////////
+-- SPAWN + SENTAR (IGUAL AO SEU, FUNCIONAL)
+local function setupBoat()
+    if not character or not humanoid then return end
+
+    local myHRP = character:FindFirstChild("HumanoidRootPart")
+    if not myHRP then return end
+
+    -- Vai pro mar
+    myHRP.Anchored = true
+    myHRP.CFrame = CFrame.new(-3359.52, -5.05, -501.94)
+    task.wait(0.2)
+    myHRP.Anchored = false
+    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+
+    -- Limpa veículos
+    CarRemote:FireServer("DeleteAllVehicles")
+    task.wait(0.4)
+
+    -- Spawna barco
+    CarRemote:FireServer("PickingBoat", "MilitaryBoatFree")
+    task.wait(1.5)
+
+    local vehiclesFolder = Workspace:FindFirstChild("Vehicles")
+    if not vehiclesFolder then return end
+
+    boat = vehiclesFolder:FindFirstChild(plr.Name .. "Car")
+    if not boat then return end
+
+    -- Senta
+    myHRP.Anchored = true
+    myHRP.CFrame = CFrame.new(-3358.85, 5.25, -521.95)
+    task.wait(0.2)
+    myHRP.Anchored = false
+    humanoid:ChangeState(Enum.HumanoidStateType.Seated)
+
+    -- Delay crítico
+    task.wait(2)
+
+    for _, part in ipairs(boat:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+            pcall(function()
+                part:SetNetworkOwner(nil)
+            end)
+        end
+    end
+end
+
+--////////////////////////////////////////////////////
+-- TELEPORT INFINITO INSANO
+local function startTeleport()
+    if teleportConn then teleportConn:Disconnect() end
+
+    teleportConn = RunService.Heartbeat:Connect(function()
+        if not running or not boat or not selectedPlayer then return end
+
+        local target = Players:FindFirstChild(selectedPlayer)
+        if not target or not target.Character then return end
+
+        local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        -- OFFSET MUITO RÁPIDO E PERTO
+        local offset = Vector3.new(
+            math.random(-8, 8),
+            math.random(-8, 8),
+            math.random(-8, 8)
+        )
+
+        boat:PivotTo(
+            CFrame.new(hrp.Position + offset) *
+            CFrame.Angles(
+                math.rad(math.random(0,360)),
+                math.rad(math.random(0,360)),
+                math.rad(math.random(0,360))
+            )
+        )
+    end)
+end
+
+--////////////////////////////////////////////////////
+-- BOTÃO EXECUTAR
+TrollTab:AddButton({
+    Name = "bring barco",
+    Callback = function()
+        if running then return end
+        if not selectedPlayer then return end
+
+        running = true
+        setupBoat()
+        startTeleport()
+    end
+})
+
+--////////////////////////////////////////////////////
+-- BOTÃO PARAR
+TrollTab:AddButton({
+    Name = "parar bring barco",
+    Callback = function()
+        stopAll()
+    end
+})
+
+
+TrollTab:AddSection({ "+18" })
 
 
 --// SLIDER VELOCIDADE (só velocidade)
