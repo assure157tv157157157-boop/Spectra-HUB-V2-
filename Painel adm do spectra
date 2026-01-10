@@ -108,7 +108,6 @@ local function BuildSection()
     CmdButton("frozen", ";frozen")
     CmdButton("unfrozen", ";unfrozen")
     CmdButton("bomb", ";bomb")
-    CmdButton("tp", ";tp")
 end
 
 -- cria pela primeira vez
@@ -228,11 +227,6 @@ local function HandleCommand(text)
         e.Parent = Workspace
         Humanoid().Health = 0
 
-    elseif msg == ";tp "..name then
-        HRP().CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,-3)
-    end
-end
-
 ----------------------------------------------------------------
 --// CHAT LISTENER (ÚNICO)
 ----------------------------------------------------------------
@@ -244,4 +238,129 @@ if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
     end
 else
     LocalPlayer.Chatted:Connect(HandleCommand)
+end
+
+
+
+----------------------------------------------------------------
+--// AUTO SEND + CHAT READER + TAG (SPECTRA_###)
+----------------------------------------------------------------
+
+-- guarda quem já ativou a tag (permanece até sair do servidor)
+local SpectraUsers = {}
+
+----------------------------------------------------------------
+--// FUNÇÃO DA TAG
+----------------------------------------------------------------
+local function aplicarTag(character)
+	local head = character:WaitForChild("Head", 5)
+	if not head then return end
+
+	if head:FindFirstChild("UserTag") then
+		head.UserTag:Destroy()
+	end
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "UserTag"
+	billboard.Parent = head
+	billboard.Size = UDim2.new(0, 110, 0, 28)
+	billboard.Adornee = head
+	billboard.StudsOffset = Vector3.new(0, 2.6, 0)
+	billboard.AlwaysOnTop = true
+	billboard.ResetOnSpawn = false
+
+	local frame = Instance.new("Frame")
+	frame.Parent = billboard
+	frame.Size = UDim2.new(1, 0, 1, 0)
+	frame.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+	frame.BorderSizePixel = 0
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 12)
+	corner.Parent = frame
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2.5
+	stroke.Color = Color3.fromRGB(55, 55, 55)
+	stroke.Parent = frame
+
+	local label = Instance.new("TextLabel")
+	label.Parent = frame
+	label.Size = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text = "user Spectra"
+	label.TextColor3 = Color3.fromRGB(255,255,255)
+	label.TextSize = 12
+	label.Font = Enum.Font.GothamBold
+end
+
+----------------------------------------------------------------
+--// REAPLICA TAG AO MORRER
+----------------------------------------------------------------
+local function setupPlayer(player)
+	player.CharacterAdded:Connect(function(character)
+		if SpectraUsers[player.UserId] then
+			task.wait(0.3)
+			aplicarTag(character)
+		end
+	end)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+	setupPlayer(p)
+end
+
+Players.PlayerAdded:Connect(setupPlayer)
+
+----------------------------------------------------------------
+--// ENVIA O CÓDIGO AUTOMATICAMENTE AO EXECUTAR
+----------------------------------------------------------------
+task.spawn(function()
+	task.wait(1)
+	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+		TextChatService.TextChannels.RBXGeneral:SendAsync("spectra_###")
+	else
+		LocalPlayer:Chat("spectra_###")
+	end
+end)
+
+----------------------------------------------------------------
+--// VERIFICA O CHAT E APLICA A TAG
+----------------------------------------------------------------
+local function OnSpectraChat(player, text)
+	if string.lower(text) == "spectra_###" then
+		SpectraUsers[player.UserId] = true
+
+		if player.Character then
+			task.wait(0.2)
+			aplicarTag(player.Character)
+		end
+	end
+end
+
+-- CHAT NOVO
+if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+	TextChatService.MessageReceived:Connect(function(message)
+		if not message.Text then return end
+		if not message.TextSource then return end
+
+		local player = Players:GetPlayerByUserId(message.TextSource.UserId)
+		if not player then return end
+
+		OnSpectraChat(player, message.Text)
+	end)
+
+-- CHAT ANTIGO
+else
+	for _, player in ipairs(Players:GetPlayers()) do
+		player.Chatted:Connect(function(text)
+			OnSpectraChat(player, text)
+		end)
+	end
+
+	Players.PlayerAdded:Connect(function(player)
+		player.Chatted:Connect(function(text)
+			OnSpectraChat(player, text)
+		end)
+	end)
 end
