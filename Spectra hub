@@ -518,6 +518,126 @@ TrollTab:AddButton({
 
 
 
+--==============================
+-- SPECTATE (BOTÃO ARRUMADO)
+--==============================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local spectating = false
+local spectateConn
+local charConn
+local currentTarget
+
+--==============================
+-- FUNÇÕES
+--==============================
+local function resetCamera()
+    if spectateConn then spectateConn:Disconnect() spectateConn = nil end
+    if charConn then charConn:Disconnect() charConn = nil end
+
+    currentTarget = nil
+
+    local char = LocalPlayer.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        Camera.CameraSubject = hum
+        Camera.CameraType = Enum.CameraType.Custom
+    end
+end
+
+local function spectatePlayer(player)
+    if not spectating or not player then return end
+
+    resetCamera()
+    spectating = true
+    currentTarget = player
+
+    spectateConn = RunService.RenderStepped:Connect(function()
+        if not spectating then return end
+        if not currentTarget or not currentTarget.Character then return end
+
+        local hum = currentTarget.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            Camera.CameraSubject = hum
+            Camera.CameraType = Enum.CameraType.Custom
+        end
+    end)
+
+    charConn = player.CharacterAdded:Connect(function()
+        task.wait(0.1)
+        if spectating and currentTarget == player then
+            spectatePlayer(player)
+        end
+    end)
+end
+
+--==============================
+-- PLAYER SAINDO
+--==============================
+Players.PlayerRemoving:Connect(function(plr)
+    if spectating and currentTarget == plr then
+        resetCamera()
+        spectating = false
+    end
+end)
+
+--==============================
+-- BOTÃO
+--==============================
+TrollTab:AddToggle({
+    Name = "👁️ Spectar Jogador",
+    Default = false,
+    Callback = function(state)
+        spectating = state
+
+        if not state then
+            resetCamera()
+            return
+        end
+
+        local target = Players:FindFirstChild(selectedPlayer)
+        if target then
+            spectatePlayer(target)
+        else
+            resetCamera()
+        end
+    end
+})
+
+--==============================
+-- TROCA DE PLAYER (SEM QUEBRAR LISTA)
+--==============================
+task.spawn(function()
+    local lastSelected
+
+    while true do
+        task.wait(0.15)
+
+        if not spectating then
+            lastSelected = nil
+            continue
+        end
+
+        if selectedPlayer ~= lastSelected then
+            lastSelected = selectedPlayer
+            local newTarget = Players:FindFirstChild(selectedPlayer)
+
+            if newTarget then
+                spectatePlayer(newTarget)
+            else
+                resetCamera()
+            end
+        end
+    end
+end)
+
+
+
+TrollTab:AddSection({ "trolls" })
+
 --////////////////////////////////////////////////////
 --// VARIÁVEIS
 local toggleEnabled = false
@@ -861,125 +981,6 @@ TrollTab:AddToggle({
         end)
     end
 })
-
-
-
---==============================
--- SPECTATE (BOTÃO ARRUMADO)
---==============================
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
-
-local spectating = false
-local spectateConn
-local charConn
-local currentTarget
-
---==============================
--- FUNÇÕES
---==============================
-local function resetCamera()
-    if spectateConn then spectateConn:Disconnect() spectateConn = nil end
-    if charConn then charConn:Disconnect() charConn = nil end
-
-    currentTarget = nil
-
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        Camera.CameraSubject = hum
-        Camera.CameraType = Enum.CameraType.Custom
-    end
-end
-
-local function spectatePlayer(player)
-    if not spectating or not player then return end
-
-    resetCamera()
-    spectating = true
-    currentTarget = player
-
-    spectateConn = RunService.RenderStepped:Connect(function()
-        if not spectating then return end
-        if not currentTarget or not currentTarget.Character then return end
-
-        local hum = currentTarget.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            Camera.CameraSubject = hum
-            Camera.CameraType = Enum.CameraType.Custom
-        end
-    end)
-
-    charConn = player.CharacterAdded:Connect(function()
-        task.wait(0.1)
-        if spectating and currentTarget == player then
-            spectatePlayer(player)
-        end
-    end)
-end
-
---==============================
--- PLAYER SAINDO
---==============================
-Players.PlayerRemoving:Connect(function(plr)
-    if spectating and currentTarget == plr then
-        resetCamera()
-        spectating = false
-    end
-end)
-
---==============================
--- BOTÃO
---==============================
-TrollTab:AddToggle({
-    Name = "👁️ Spectar Jogador",
-    Default = false,
-    Callback = function(state)
-        spectating = state
-
-        if not state then
-            resetCamera()
-            return
-        end
-
-        local target = Players:FindFirstChild(selectedPlayer)
-        if target then
-            spectatePlayer(target)
-        else
-            resetCamera()
-        end
-    end
-})
-
---==============================
--- TROCA DE PLAYER (SEM QUEBRAR LISTA)
---==============================
-task.spawn(function()
-    local lastSelected
-
-    while true do
-        task.wait(0.15)
-
-        if not spectating then
-            lastSelected = nil
-            continue
-        end
-
-        if selectedPlayer ~= lastSelected then
-            lastSelected = selectedPlayer
-            local newTarget = Players:FindFirstChild(selectedPlayer)
-
-            if newTarget then
-                spectatePlayer(newTarget)
-            else
-                resetCamera()
-            end
-        end
-    end
-end)
-
 
 
 --==============================
