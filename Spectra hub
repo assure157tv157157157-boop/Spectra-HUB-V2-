@@ -1816,6 +1816,7 @@ local tools = {
     ["Motosserra"]            = "Chainsaw",
     ["Lança Azul"]            = "JoustBlue",
     ["Regador"]               = "WateringCan",
+    ["macaco azul "]          = "BlueMonkey",
     ["Presente"]              = "Present",
     ["Bandeja"]               = "CookieWindowTray",
     ["Cristal"]               = "Crystal",
