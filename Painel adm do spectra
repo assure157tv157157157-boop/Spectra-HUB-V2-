@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 local TextChatService = game:GetService("TextChatService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -18,7 +19,7 @@ end)
 if not ok then return end
 
 local Window = WindUILib:CreateWindow({
-    Title = "« SPECTRA admin »",
+    Title = "« SPECTRA_admin »",
     Icon = "star",
     Author = "by assure_TV",
     Folder = "SpectraHub_Admin",
@@ -29,7 +30,7 @@ local Window = WindUILib:CreateWindow({
     HideSearchBar = true,
 })
 
-local Tab = Window:Tab({ Title = " comandos ", Icon = "terminal" })
+local Tab = Window:Tab({ Title = "← comandos →", Icon = "terminal" })
 
 --------------------------------------------------
 --// PLAYER UTILS
@@ -104,13 +105,6 @@ local function BuildSection()
     CmdButton("frozen", ";frozen")
     CmdButton("unfrozen", ";unfrozen")
     CmdButton("bomb", ";bomb")
-
-    Section:Button({
-        Title = "verifique ALL",
-        Callback = function()
-            SendChat(";verifique")
-        end
-    })
 end
 
 BuildSection()
@@ -126,58 +120,84 @@ Players.PlayerRemoving:Connect(function()
 end)
 
 --------------------------------------------------
---// TAG SYSTEM (GLOBAL + PERMANENTE + INSTANTÂNEO)
+--// TAG SYSTEM (ANTI-INVISÍVEL / PERMANENTE)
 --------------------------------------------------
 local TaggedPlayers = {}
-local PlayerTags = {}
 
 local function criarTag(head)
-    local old = head:FindFirstChild("UserTag")
-    if old then old:Destroy() end
+    if head:FindFirstChild("UserTag") then
+        return head.UserTag
+    end
 
-    local bb = Instance.new("BillboardGui")
-    bb.Name = "UserTag"
-    bb.Size = UDim2.new(0, 160, 0, 36)
-    bb.Adornee = head
-    bb.AlwaysOnTop = true
-    bb.StudsOffset = Vector3.new(0, 3.4, 0) -- MAIS ALTO
-    bb.LightInfluence = 0
-    bb.MaxDistance = math.huge
-    bb.ResetOnSpawn = false
-    bb.Parent = head
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "UserTag"
+    billboard.Size = UDim2.new(0, 110, 0, 30)
+    billboard.Adornee = head
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 2.6, 0)
+    billboard.LightInfluence = 0
+    billboard.MaxDistance = math.huge
+    billboard.ResetOnSpawn = false
+    billboard.Parent = head
 
-    local txt = Instance.new("TextLabel")
-    txt.Size = UDim2.new(1,0,1,0)
-    txt.BackgroundTransparency = 1
-    txt.Text = "user Spectra"
-    txt.TextColor3 = Color3.new(1,1,1)
-    txt.Font = Enum.Font.SourceSansBold
-    txt.TextScaled = true
-    txt.TextStrokeTransparency = 0
-    txt.Parent = bb
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(100,100,100)
+    frame.BorderSizePixel = 0
+    frame.Parent = billboard
 
-    return bb
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = frame
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 2.5
+    stroke.Color = Color3.fromRGB(55,55,55)
+    stroke.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "user Spectra"
+    label.TextColor3 = Color3.fromRGB(255,255,255)
+    label.TextStrokeTransparency = 0
+    label.TextSize = 12
+    label.Font = Enum.Font.GothamBold
+    label.Parent = frame
+
+    return billboard
 end
 
-local function applyTag(player)
+local function garantirTagNoCharacter(character)
+    local head = character:WaitForChild("Head", 10)
+    if not head then return end
+
+    criarTag(head)
+
+    task.spawn(function()
+        while character.Parent do
+            task.wait(1)
+            if not head.Parent then break end
+
+            local tag = head:FindFirstChild("UserTag")
+            if not tag or tag.Enabled == false then
+                criarTag(head)
+            end
+        end
+    end)
+end
+
+local function garantirTag(player)
+    if TaggedPlayers[player.UserId] then return end
     TaggedPlayers[player.UserId] = true
 
-    local function attach(character)
-        local head = character:WaitForChild("Head", 5)
-        if not head then return end
-
-        local tag = criarTag(head)
-        PlayerTags[player.UserId] = tag
-    end
-
     if player.Character then
-        attach(player.Character)
+        garantirTagNoCharacter(player.Character)
     end
 
-    player.CharacterAdded:Connect(function(char)
-        task.defer(function()
-            attach(char)
-        end)
+    player.CharacterAdded:Connect(function(character)
+        task.wait(0.2)
+        garantirTagNoCharacter(character)
     end)
 end
 
@@ -198,9 +218,17 @@ end
 
 local CaixaPart
 
-local function ActionKill() Humanoid().Health = 0 end
-local function ActionFling() HRP().Velocity = Vector3.new(6000,300,6000) end
-local function ActionFlingOp() HRP().Velocity = Vector3.new(0,150000,0) end
+local function ActionKill()
+    Humanoid().Health = 0
+end
+
+local function ActionFling()
+    HRP().Velocity = Vector3.new(6000,300,6000)
+end
+
+local function ActionFlingOp()
+    HRP().Velocity = Vector3.new(0,150000,0)
+end
 
 local function ActionCaixa()
     if CaixaPart then return end
@@ -211,7 +239,8 @@ local function ActionCaixa()
     CaixaPart = Instance.new("Part")
     CaixaPart.Size = Vector3.new(8,10,8)
     CaixaPart.Transparency = 0.35
-    CaixaPart.Color = Color3.new(0,0,0)
+    CaixaPart.Color = Color3.fromRGB(0,0,0)
+    CaixaPart.Material = Enum.Material.SmoothPlastic
     CaixaPart.CanCollide = true
     CaixaPart.CFrame = HRP().CFrame
     CaixaPart.Parent = Workspace
@@ -223,7 +252,10 @@ local function ActionCaixa()
 end
 
 local function ActionUnCaixa()
-    if CaixaPart then CaixaPart:Destroy() CaixaPart = nil end
+    if CaixaPart then
+        CaixaPart:Destroy()
+        CaixaPart = nil
+    end
     HRP().Anchored = false
     Humanoid().WalkSpeed = 16
     Humanoid().JumpPower = 50
@@ -250,28 +282,35 @@ local function ActionBomb()
 end
 
 --------------------------------------------------
---// CHAT HANDLER (GLOBAL)
+--// CHAT HANDLER
 --------------------------------------------------
 local function HandleCommand(text)
     local msg = string.lower(text)
     local name = string.lower(LocalPlayer.Name)
 
-    if msg == ";verifique" then
-        SendChat("spectra_###")
-    end
+    if msg == ";kill "..name then
+        ActionKill()
 
-    if msg == "spectra_###" then
-        applyTag(LocalPlayer)
-    end
+    elseif msg == ";fling "..name then
+        ActionFling()
 
-    if msg == ";kill "..name then ActionKill()
-    elseif msg == ";fling "..name then ActionFling()
-    elseif msg == ";flingop "..name then ActionFlingOp()
-    elseif msg == ";caixa "..name then ActionCaixa()
-    elseif msg == ";uncaixa "..name then ActionUnCaixa()
-    elseif msg == ";frozen "..name then ActionFrozen()
-    elseif msg == ";unfrozen "..name then ActionUnFrozen()
-    elseif msg == ";bomb "..name then ActionBomb()
+    elseif msg == ";flingop "..name then
+        ActionFlingOp()
+
+    elseif msg == ";caixa "..name then
+        ActionCaixa()
+
+    elseif msg == ";uncaixa "..name then
+        ActionUnCaixa()
+
+    elseif msg == ";frozen "..name then
+        ActionFrozen()
+
+    elseif msg == ";unfrozen "..name then
+        ActionUnFrozen()
+
+    elseif msg == ";bomb "..name then
+        ActionBomb()
     end
 end
 
@@ -280,8 +319,147 @@ end
 --------------------------------------------------
 if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
     TextChatService.TextChannels.RBXGeneral.OnIncomingMessage = function(m)
-        if m.Text then HandleCommand(m.Text) end
+        if m.Text then
+            HandleCommand(m.Text)
+        end
     end
 else
     LocalPlayer.Chatted:Connect(HandleCommand)
+end
+
+
+
+local Section = Tab:Section({
+    Title = "verifique global",
+    Opened = true
+})
+
+local function SendChat(msg)
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        TextChatService.TextChannels.RBXGeneral:SendAsync(msg)
+    else
+        LocalPlayer:Chat(msg)
+    end
+end
+
+Section:Button({
+    Title = "verifique",
+    Callback = function()
+        SendChat(";verifique")
+    end
+})
+
+-------------------------------------------------
+--// TAG SYSTEM (PERMANENTE)
+-------------------------------------------------
+local Tagged = {}
+
+local function criarTag(head)
+    if head:FindFirstChild("SpectraTag") then return end
+
+    local gui = Instance.new("BillboardGui")
+    gui.Name = "SpectraTag"
+    gui.Adornee = head
+    gui.Size = UDim2.new(0,150,0,36)
+    gui.StudsOffset = Vector3.new(0,2.9,0)
+    gui.AlwaysOnTop = true
+    gui.MaxDistance = math.huge
+    gui.Parent = head
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1,0,1,0)
+    frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    frame.BackgroundTransparency = 0.25
+    frame.BorderSizePixel = 0
+    frame.Parent = gui
+
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(255,255,255)
+    stroke.Thickness = 2
+    stroke.Parent = frame
+
+    local txt = Instance.new("TextLabel")
+    txt.Size = UDim2.new(1,0,1,0)
+    txt.BackgroundTransparency = 1
+    txt.Text = "user Spectra\n𝘀𝗰𝗿𝗶𝗽𝘁𝘀 𝗲"
+    txt.TextColor3 = Color3.fromRGB(255,255,255)
+    txt.TextStrokeTransparency = 0
+    txt.TextScaled = true
+    txt.Font = Enum.Font.GothamBold
+    txt.Parent = frame
+end
+
+local function garantirTag(player)
+    if Tagged[player.UserId] then return end
+    Tagged[player.UserId] = true
+
+    local function aplicar(character)
+        local head = character:WaitForChild("Head",10)
+        if not head then return end
+        criarTag(head)
+
+        task.spawn(function()
+            while character.Parent do
+                task.wait(0.3)
+                if not head:FindFirstChild("SpectraTag") then
+                    criarTag(head)
+                end
+            end
+        end)
+    end
+
+    if player.Character then
+        aplicar(player.Character)
+    end
+    player.CharacterAdded:Connect(aplicar)
+end
+
+-------------------------------------------------
+--// VERIFICAÇÃO GLOBAL (CHAVE DO SCRIPT)
+-------------------------------------------------
+local estouVerificando = false
+
+local function onMessage(text, speaker)
+    local msg = string.lower(text)
+
+    -- SE EU CLIQUEI EM VERIFIQUE
+    if msg == ";verifique" and speaker == LocalPlayer then
+        estouVerificando = true
+        return
+    end
+
+    -- QUALQUER SCRIPT QUE VER ;VERIFIQUE RESPONDE
+    if msg == ";verifique" and speaker ~= LocalPlayer then
+        SendChat("spectra_###")
+        return
+    end
+
+    -- SE EU ESTOU VERIFICANDO E ALGUÉM RESPONDE
+    if estouVerificando and msg == "spectra_###" and speaker then
+        garantirTag(speaker)
+    end
+end
+
+-------------------------------------------------
+--// CHAT LISTENER
+-------------------------------------------------
+if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+    TextChatService.TextChannels.RBXGeneral.OnIncomingMessage = function(m)
+        if not m.Text then return end
+
+        local speaker
+        if m.TextSource then
+            speaker = Players:GetPlayerByUserId(m.TextSource.UserId)
+        end
+
+        onMessage(m.Text, speaker)
+    end
+else
+    for _,plr in ipairs(Players:GetPlayers()) do
+        plr.Chatted:Connect(function(msg)
+            onMessage(msg, plr)
+        end)
+    end
 end
